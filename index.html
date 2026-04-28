@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Reconstruction Calculator — Saint Petersburg</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --surface2:  #1c2330;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --accent:    #58a6ff;
+    --green:     #3fb950;
+    --yellow:    #d29922;
+    --red:       #f85149;
+    --green-bg:  rgba(63,185,80,.12);
+    --yellow-bg: rgba(210,153,34,.12);
+    --red-bg:    rgba(248,81,73,.12);
+    --radius:    10px;
+    --shadow:    0 4px 24px rgba(0,0,0,.4);
+  }
+
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    max-width: 1200px;
+    margin: 0 auto 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-title h1 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -.5px;
+  }
+  .header-title p { color: var(--muted); font-size: .875rem; margin-top: 4px; }
+  .print-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .875rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color .2s, background .2s;
+    white-space: nowrap;
+    align-self: center;
+  }
+  .print-btn:hover { border-color: var(--accent); background: rgba(88,166,255,.08); }
+
+  /* ── LAYOUT ── */
+  .main-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* ── SCENARIO BUTTONS ── */
+  .scenarios {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .scenario-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: .8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .18s;
+    text-align: center;
+  }
+  .scenario-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scenario-btn.active {
+    border-color: var(--accent);
+    background: rgba(88,166,255,.15);
+    color: var(--accent);
+  }
+
+  /* ── INPUT ROWS ── */
+  .input-group { margin-bottom: 20px; }
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .input-label span:first-child { font-size: .875rem; font-weight: 500; }
+  .input-label .unit { font-size: .75rem; color: var(--muted); }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    cursor: pointer;
+    transition: transform .1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    cursor: pointer;
+  }
+
+  input[type="number"] {
+    width: 130px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: .875rem;
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color .2s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: var(--accent); }
+
+  /* ── RIGHT COLUMN ── */
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── METRICS GRID ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .metrics-grid { grid-template-columns: 1fr; } }
+
+  .metric {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: border-color .3s, background .3s;
+  }
+  .metric.full-width { grid-column: 1 / -1; }
+  .metric-label {
+    font-size: .6875rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .metric-value {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-sub {
+    font-size: .75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ROI color states */
+  .metric.roi-green { border-color: var(--green); background: var(--green-bg); }
+  .metric.roi-green .metric-value { color: var(--green); }
+  .metric.roi-yellow { border-color: var(--yellow); background: var(--yellow-bg); }
+  .metric.roi-yellow .metric-value { color: var(--yellow); }
+  .metric.roi-red { border-color: var(--red); background: var(--red-bg); }
+  .metric.roi-red .metric-value { color: var(--red); }
+
+  /* ── BREAKEVEN ── */
+  .breakeven-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .breakeven-row .metric { flex: 1; min-width: 140px; }
+
+  /* ── CHART CARD ── */
+  .chart-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .chart-canvas-wrap { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
+  .chart-legend { flex: 1; min-width: 160px; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-label { font-size: .8125rem; color: var(--muted); }
+  .legend-value { font-size: .9375rem; font-weight: 600; margin-top: 1px; }
+
+  /* Divider */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  /* ── MULTIPLIER BAR ── */
+  .multiplier-wrap { margin-top: 4px; }
+  .multiplier-bar-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .multiplier-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #79c0ff);
+    border-radius: 4px;
+    transition: width .4s ease;
+    min-width: 4px;
+  }
+  .multiplier-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: .6875rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── EFFICIENCY BADGE ── */
+  .efficiency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: background .3s, border-color .3s, color .3s;
+  }
+  .efficiency-badge.eff-green  { background: var(--green-bg);  border-color: var(--green);  color: var(--green); }
+  .efficiency-badge.eff-yellow { background: var(--yellow-bg); border-color: var(--yellow); color: var(--yellow); }
+  .efficiency-badge.eff-red    { background: var(--red-bg);    border-color: var(--red);    color: var(--red); }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    .card { background: #fff; border: 1px solid #ccc; box-shadow: none; }
+    .scenarios, .print-btn, .scenario-btn { display: none !important; }
+    .main-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    header { margin-bottom: 16px; }
+    .metric { background: #f8f8f8; border-color: #ccc; }
+    .metric-value { color: #000 !important; }
+    .metric.roi-green .metric-value { color: #1a7f3c !important; }
+    .metric.roi-yellow .metric-value { color: #9a6700 !important; }
+    .metric.roi-red .metric-value { color: #cf222e !important; }
+    input[type="range"], input[type="number"] { display: none; }
+    .input-label { margin-bottom: 0; }
+    .input-row { display: none; }
+    .print-value { display: block !important; font-weight: 600; font-size: .9375rem; }
+    .card-title, .metric-label, .legend-label { color: #555 !important; }
+  }
+  .print-value { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <h1>Реконструкция — Финансовый Калькулятор</h1>
+    <p>Анализ инвестиций · Санкт-Петербург · Премиальная недвижимость</p>
+  </div>
+  <button class="print-btn" onclick="window.print()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Экспорт / Печать
+  </button>
+</header>
+
+<div class="main-grid">
+
+  <!-- ── LEFT: INPUTS ── -->
+  <div>
+    <div class="card">
+      <p class="card-title">Параметры проекта</p>
+
+      <!-- Scenarios -->
+      <div class="scenarios">
+        <button class="scenario-btn" data-scenario="conservative" onclick="applyScenario('conservative', this)">Консервативный</button>
+        <button class="scenario-btn active" data-scenario="base" onclick="applyScenario('base', this)">Базовый</button>
+        <button class="scenario-btn" data-scenario="optimistic" onclick="applyScenario('optimistic', this)">Оптимистичный</button>
+      </div>
+
+      <!-- Area -->
+      <div class="input-group">
+        <div class="input-label">
+          <span>Площадь здания</span>
+          <span class="unit">м²</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="area-slider" min="500" max="50000" step="100">
+          <input type="number" id="area-num" min="500" max="50000" step="100">
+        </div>
+        <div class="print-value" id="area-print"></div>
+      </div>
+
+      <!-- Sellable area -->
+      <div class="input-group">
+        <div class="input-label">
+          <span>Эффективная площадь продажи</span>
+          <span class="unit">м²</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="sellable-slider" min="300" max="45000" step="100">
+          <input type="number" id="sellable-num" min="300" max="45000" step="100">
+        </div>
+        <div>
+          <span class="efficiency-badge" id="efficiency-badge">—</span>
+        </div>
+        <div class="print-value" id="sellable-print"></div>
+      </div>
+
+      <!-- Purchase price -->
+      <div class="input-group">
+        <div class="input-label">
+          <span>Цена покупки</span>
+          <span class="unit">₽/м²</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="purchase-slider" min="50000" max="1000000" step="1000">
+          <input type="number" id="purchase-num" min="50000" max="1000000" step="1000">
+        </div>
+        <div class="print-value" id="purchase-print"></div>
+      </div>
+
+      <!-- CAPEX -->
+      <div class="input-group">
+        <div class="input-label">
+          <span>CAPEX (реконструкция)</span>
+          <span class="unit">₽/м²</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="capex-slider" min="50000" max="1000000" step="1000">
+          <input type="number" id="capex-num" min="50000" max="1000000" step="1000">
+        </div>
+        <div class="print-value" id="capex-print"></div>
+      </div>
+
+      <!-- Sale price -->
+      <div class="input-group">
+        <div class="input-label">
+          <span>Цена продажи инвесторам</span>
+          <span class="unit">₽/м²</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="sale-slider" min="50000" max="1000000" step="1000">
+          <input type="number" id="sale-num" min="50000" max="1000000" step="1000">
+        </div>
+        <div class="print-value" id="sale-print"></div>
+      </div>
+
+      <!-- Multiplier bar -->
+      <hr class="divider">
+      <p class="card-title" style="margin-bottom:10px">Мультипликатор</p>
+      <div class="multiplier-wrap">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:.875rem;color:var(--muted)">Цена продажи / Себестоимость м²</span>
+          <span id="multiplier-val" style="font-size:1.375rem;font-weight:700;color:var(--accent)">—</span>
+        </div>
+        <div class="multiplier-bar-track">
+          <div class="multiplier-bar-fill" id="multiplier-bar" style="width:0%"></div>
+        </div>
+        <div class="multiplier-labels"><span>1×</span><span>2×</span><span>3×</span><span>4×</span><span>5×</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: OUTPUTS ── -->
+  <div class="right-col">
+
+    <!-- Investment Summary -->
+    <div class="card">
+      <p class="card-title">Сводка инвестиций</p>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-label">Стоимость покупки</div>
+          <div class="metric-value" id="total-purchase">—</div>
+          <div class="metric-sub">Total purchase cost</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Итого CAPEX</div>
+          <div class="metric-value" id="total-capex">—</div>
+          <div class="metric-sub">Total capex spend</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Общий бюджет проекта</div>
+          <div class="metric-value" id="total-cost">—</div>
+          <div class="metric-sub">Total project cost</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Выручка от продажи</div>
+          <div class="metric-value" id="total-revenue">—</div>
+          <div class="metric-sub">Gross revenue</div>
+        </div>
+        <div class="metric full-width" id="gross-profit-card">
+          <div class="metric-label">Валовая прибыль</div>
+          <div class="metric-value" id="gross-profit">—</div>
+          <div class="metric-sub">Gross profit</div>
+        </div>
+        <div class="metric" id="roi-card">
+          <div class="metric-label">ROI</div>
+          <div class="metric-value" id="roi">—</div>
+          <div class="metric-sub">Return on investment</div>
+        </div>
+        <div class="metric" id="margin-card">
+          <div class="metric-label">Маржа прибыли</div>
+          <div class="metric-value" id="margin">—</div>
+          <div class="metric-sub">Profit margin</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breakeven -->
+    <div class="card">
+      <p class="card-title">Анализ безубыточности</p>
+      <div class="breakeven-row">
+        <div class="metric">
+          <div class="metric-label">Цена безубыточности</div>
+          <div class="metric-value" id="breakeven-price">—</div>
+          <div class="metric-sub">₽/м²</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Премия над безубыточностью</div>
+          <div class="metric-value" id="breakeven-premium-rub">—</div>
+          <div class="metric-sub" id="breakeven-premium-pct">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost structure chart -->
+    <div class="card">
+      <p class="card-title">Структура затрат</p>
+      <div class="chart-wrap">
+        <div class="chart-canvas-wrap">
+          <canvas id="costChart"></canvas>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#58a6ff"></div>
+            <div>
+              <div class="legend-label">Стоимость покупки</div>
+              <div class="legend-value" id="legend-purchase">—</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#3fb950"></div>
+            <div>
+              <div class="legend-label">CAPEX (реконструкция)</div>
+              <div class="legend-value" id="legend-capex">—</div>
+            </div>
+          </div>
+          <hr class="divider" style="margin:8px 0 12px">
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">Итого затраты</div>
+          <div style="font-size:1rem;font-weight:700;" id="legend-total">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── SCENARIOS ──
+const SCENARIOS = {
+  conservative: { area: 5000,  sellable: 2750,  purchase: 120000, capex: 85000,  sale: 250000 },
+  base:         { area: 8500,  sellable: 5270,  purchase: 155000, capex: 105000, sale: 340000 },
+  optimistic:   { area: 14000, sellable: 9520,  purchase: 190000, capex: 130000, sale: 460000 },
+};
+
+// ── FORMATTERS ──
+const fmt = (n) => Math.round(n).toLocaleString('ru-RU') + ' ₽';
+const fmtShort = (n) => {
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n / 1e9).toFixed(2).replace('.', ',') + ' млрд ₽';
+  if (abs >= 1e6) return (n / 1e6).toFixed(1).replace('.', ',') + ' млн ₽';
+  return fmt(n);
+};
+const fmtPct = (n) => n.toFixed(1).replace('.', ',') + ' %';
+
+// ── CHART SETUP ──
+let costChart;
+(function initChart() {
+  const ctx = document.getElementById('costChart').getContext('2d');
+  costChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Покупка', 'CAPEX'],
+      datasets: [{
+        data: [50, 50],
+        backgroundColor: ['#58a6ff', '#3fb950'],
+        borderColor: '#161b22',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const pct = ctx.parsed.toFixed(1);
+              return ` ${ctx.label}: ${pct}%`;
+            }
+          },
+          backgroundColor: '#1c2330',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          padding: 10,
+          titleColor: '#8b949e',
+          bodyColor: '#e6edf3',
+        }
+      }
+    }
+  });
+})();
+
+// ── LINKED INPUT HELPERS ──
+function linkInputs(sliderId, numId) {
+  const slider = document.getElementById(sliderId);
+  const num    = document.getElementById(numId);
+  slider.addEventListener('input', () => { num.value = slider.value; calculate(); });
+  num.addEventListener('input',   () => {
+    let v = parseFloat(num.value);
+    if (!isNaN(v)) {
+      v = Math.min(Math.max(v, parseFloat(slider.min)), parseFloat(slider.max));
+      slider.value = v;
+    }
+    calculate();
+  });
+}
+linkInputs('area-slider',     'area-num');
+linkInputs('sellable-slider', 'sellable-num');
+linkInputs('purchase-slider', 'purchase-num');
+linkInputs('capex-slider',    'capex-num');
+linkInputs('sale-slider',     'sale-num');
+
+// ── SCENARIO APPLY ──
+function applyScenario(key, btn) {
+  const s = SCENARIOS[key];
+  setInput('area',     s.area);
+  setInput('sellable', s.sellable);
+  setInput('purchase', s.purchase);
+  setInput('capex',    s.capex);
+  setInput('sale',     s.sale);
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  calculate();
+}
+
+function setInput(name, val) {
+  document.getElementById(name + '-slider').value = val;
+  document.getElementById(name + '-num').value    = val;
+}
+
+function getInput(name) {
+  return parseFloat(document.getElementById(name + '-num').value) || 0;
+}
+
+// ── CORE CALCULATION ──
+function calculate() {
+  const area     = getInput('area');
+  const sellable = getInput('sellable');
+  const purchase = getInput('purchase');
+  const capex    = getInput('capex');
+  const sale     = getInput('sale');
+
+  // Costs → gross area; Revenue → sellable area
+  const totalPurchase = area * purchase;
+  const totalCapex    = area * capex;
+  const totalCost     = totalPurchase + totalCapex;
+  const totalRevenue  = sellable * sale;
+  const grossProfit   = totalRevenue - totalCost;
+  const roi           = totalCost > 0 ? (grossProfit / totalCost) * 100 : 0;
+  const margin        = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+
+  const breakevenPrice = sellable > 0 ? totalCost / sellable : 0;
+  const premiumRub     = sale - breakevenPrice;
+  const premiumPct     = breakevenPrice > 0 ? (premiumRub / breakevenPrice) * 100 : 0;
+
+  const multiplier     = breakevenPrice > 0 ? sale / breakevenPrice : 0;
+
+  // Efficiency ratio
+  const efficiencyRatio = area > 0 ? (sellable / area) * 100 : 0;
+  const badge = document.getElementById('efficiency-badge');
+  badge.textContent = 'Коэффициент эффективности: ' + efficiencyRatio.toFixed(1).replace('.', ',') + ' %';
+  badge.className = 'efficiency-badge';
+  if (efficiencyRatio >= 65)      badge.classList.add('eff-green');
+  else if (efficiencyRatio >= 50) badge.classList.add('eff-yellow');
+  else                            badge.classList.add('eff-red');
+
+  const purchasePct = totalCost > 0 ? (totalPurchase / totalCost) * 100 : 50;
+  const capexPct    = totalCost > 0 ? (totalCapex    / totalCost) * 100 : 50;
+
+  // ── UPDATE DOM ──
+  setText('total-purchase', fmtShort(totalPurchase));
+  setText('total-capex',    fmtShort(totalCapex));
+  setText('total-cost',     fmtShort(totalCost));
+  setText('total-revenue',  fmtShort(totalRevenue));
+  setText('gross-profit',   fmtShort(grossProfit));
+  setText('roi',            fmtPct(roi));
+  setText('margin',         fmtPct(margin));
+  setText('breakeven-price', fmt(breakevenPrice) + '/м²');
+  setText('breakeven-premium-rub', fmt(premiumRub) + '/м²');
+  setText('breakeven-premium-pct', 'Премия: ' + fmtPct(premiumPct));
+  setText('multiplier-val', multiplier.toFixed(2).replace('.', ',') + '×');
+
+  // Legend
+  setText('legend-purchase', fmtShort(totalPurchase) + ' (' + purchasePct.toFixed(0) + '%)');
+  setText('legend-capex',    fmtShort(totalCapex)    + ' (' + capexPct.toFixed(0) + '%)');
+  setText('legend-total',    fmtShort(totalCost));
+
+  // Print values
+  setText('area-print',     area.toLocaleString('ru-RU') + ' м²');
+  setText('sellable-print', sellable.toLocaleString('ru-RU') + ' м²');
+  setText('purchase-print', fmt(purchase) + '/м²');
+  setText('capex-print',    fmt(capex) + '/м²');
+  setText('sale-print',     fmt(sale) + '/м²');
+
+  // ROI color coding
+  const roiCard     = document.getElementById('roi-card');
+  const marginCard  = document.getElementById('margin-card');
+  const profitCard  = document.getElementById('gross-profit-card');
+  [roiCard, marginCard, profitCard].forEach(el => {
+    el.classList.remove('roi-green', 'roi-yellow', 'roi-red');
+    if (roi > 20) el.classList.add('roi-green');
+    else if (roi >= 10) el.classList.add('roi-yellow');
+    else el.classList.add('roi-red');
+  });
+
+  // Multiplier bar (capped at 5×)
+  const pct = Math.min((multiplier - 1) / (5 - 1) * 100, 100);
+  document.getElementById('multiplier-bar').style.width = Math.max(pct, 0) + '%';
+
+  // Chart
+  costChart.data.datasets[0].data = [purchasePct, capexPct];
+  costChart.update('none');
+
+  // Deselect scenario if inputs differ
+  const active = document.querySelector('.scenario-btn.active');
+  if (active) {
+    const key = active.dataset.scenario;
+    const s = SCENARIOS[key];
+    if (area !== s.area || sellable !== s.sellable || purchase !== s.purchase || capex !== s.capex || sale !== s.sale) {
+      active.classList.remove('active');
+    }
+  }
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── INIT with base scenario ──
+applyScenario('base', document.querySelector('[data-scenario="base"]'));
+</script>
+</body>
+</html>
